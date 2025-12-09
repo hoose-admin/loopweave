@@ -1,0 +1,62 @@
+from typing import List, Optional
+from .bigquery import get_bigquery_client
+from ..types import Stock
+
+def get_all_stocks() -> List[Stock]:
+    """Get all stocks from BigQuery"""
+    bq_client = get_bigquery_client()
+    
+    query = """
+    SELECT 
+        symbol,
+        company_name,
+        sector,
+        industry,
+        market_cap,
+        pe_ratio,
+        forward_pe,
+        ebitda,
+        description,
+        website,
+        logo
+    FROM `{project}.{dataset}.stocks`
+    ORDER BY company_name
+    """.format(
+        project=bq_client.project_id,
+        dataset=bq_client.dataset_id,
+    )
+    
+    results = bq_client.query(query)
+    return results
+
+def get_stock_by_symbol(symbol: str) -> Optional[Stock]:
+    """Get a specific stock by symbol"""
+    bq_client = get_bigquery_client()
+    
+    query = """
+    SELECT 
+        symbol,
+        company_name,
+        sector,
+        industry,
+        market_cap,
+        pe_ratio,
+        forward_pe,
+        ebitda,
+        description,
+        website,
+        logo
+    FROM `{project}.{dataset}.stocks`
+    WHERE symbol = '{symbol}'
+    LIMIT 1
+    """.format(
+        project=bq_client.project_id,
+        dataset=bq_client.dataset_id,
+        symbol=symbol.upper(),
+    )
+    
+    results = bq_client.query(query)
+    if not results:
+        return None
+    return results[0]
+
