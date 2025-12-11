@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -13,13 +13,13 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 # Copy dependency files first for better caching
 COPY pyproject.toml ./
 
-# Install dependencies using UV (extract from pyproject.toml and install)
+# Install dependencies using UV - it will read from pyproject.toml
 RUN uv pip install --system --no-cache \
     fastapi==0.104.1 \
     "uvicorn[standard]==0.24.0" \
     google-cloud-bigquery==3.13.0 \
-    pandas==2.1.3 \
-    pandas-ta==0.3.14b0 \
+    pandas>=2.3.2 \
+    pandas-ta \
     httpx==0.25.2 \
     python-dotenv==1.0.0 \
     pydantic==2.5.0

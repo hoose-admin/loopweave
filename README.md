@@ -131,46 +131,58 @@ cd scripts && uv run seed-stock-data.py AAPL --check-only
 
 ### Deployment
 
-**Recommended: Use Makefile (automatically loads .env)**
+**Infrastructure is managed with Terraform:**
 
-```bash
-make deploy-api        # Deploy API service
-make deploy-analytics  # Deploy Analytics service
-make deploy-frontend   # Deploy Frontend
-make setup-bigquery    # Setup BigQuery tables
-make setup-scheduler   # Setup Cloud Scheduler
-```
+1. **Setup Terraform:**
 
-**Or run scripts directly:**
+   ```bash
+   # Generate terraform.tfvars from .env file
+   make terraform-load-env
 
-```bash
-# Scripts will try to get GCP_PROJECT_ID from:
-# 1. Environment variable (from .env if loaded)
-# 2. gcloud config (gcloud config get-value project)
-# 3. Exit with error if neither is set
+   # Initialize Terraform
+   make terraform-init
+   ```
 
-chmod +x scripts/deploy-frontend.sh
-./scripts/deploy-frontend.sh
+2. **Deploy Infrastructure:**
 
-chmod +x scripts/deploy-api.sh
-./scripts/deploy-api.sh
+   ```bash
+   # Plan changes
+   make terraform-plan
 
-chmod +x scripts/deploy-analytics.sh
-./scripts/deploy-analytics.sh
+   # Apply changes (creates all infrastructure)
+   make terraform-apply
+   ```
 
-chmod +x scripts/setup-bigquery.sh
-./scripts/setup-bigquery.sh
+3. **Build and Push Docker Images:**
 
-chmod +x scripts/setup-scheduler.sh
-./scripts/setup-scheduler.sh
-```
+   ```bash
+   # Build and push all images
+   make build-push-all
 
-**Environment Variables:**
+   # Or individually:
+   make build-push-api
+   make build-push-analytics
+   make build-push-frontend
+   ```
 
-- Set `GCP_PROJECT_ID` in your root `.env` file (recommended)
-- Or set it via: `gcloud config set project YOUR_PROJECT_ID`
-- Or export it: `export GCP_PROJECT_ID=YOUR_PROJECT_ID`
-- Other variables: `GCP_REGION`, `BACKEND_URL`, `NEXT_PUBLIC_FIREBASE_*`, etc.
+**What Terraform Creates:**
+
+- BigQuery dataset and tables (timeseries, stocks, patterns, trades)
+- Artifact Registry repository
+- Cloud Run services (API, Analytics, Frontend)
+- Cloud Scheduler jobs (sync at 3AM EST, ta-metrics at 4AM EST)
+- IAM roles and service accounts
+
+**Terraform Commands:**
+
+- `make terraform-load-env` - Generate terraform.tfvars from .env
+- `make terraform-init` - Initialize Terraform
+- `make terraform-plan` - Preview changes
+- `make terraform-apply` - Apply changes
+- `make terraform-destroy` - Destroy infrastructure
+- `make terraform-output` - Show outputs (service URLs, etc.)
+
+See `terraform/README.md` for detailed Terraform documentation.
 
 ## Project Structure
 

@@ -14,13 +14,22 @@ export interface Stock {
 }
 
 export interface TimeSeriesData {
-  stock_symbol: string;
-  timestamp: string;
+  symbol: string;
+  date: string;
+  // FMP API fields from historical-price-eod/full endpoint (daily EOD data)
   open: number;
   high: number;
   low: number;
   close: number;
   volume: number;
+  unadjusted_close?: number;
+  unadjusted_volume?: number;
+  change?: number;
+  change_percent?: number;
+  vwap?: number;
+  label?: string;
+  change_over_time?: number;
+  // Technical analysis metrics (calculated fields)
   ema_12?: number;
   ema_26?: number;
   sma_50?: number;

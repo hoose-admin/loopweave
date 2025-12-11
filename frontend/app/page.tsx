@@ -1,6 +1,8 @@
-import Link from 'next/link';
-import styled from 'styled-components';
-import { AccountCircle } from '@mui/icons-material';
+"use client";
+
+import Link from "next/link";
+import styled from "styled-components";
+import { AccountCircle } from "@mui/icons-material";
 
 const Container = styled.div`
   min-height: 100vh;
@@ -100,4 +102,3 @@ export default function Home() {
     </Container>
   );
 }
-

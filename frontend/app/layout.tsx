@@ -1,7 +1,27 @@
 import type { Metadata } from "next";
+import { Inter, Montserrat, Roboto } from "next/font/google";
 import StyledComponentsRegistry from "./registry";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+  display: "swap",
+});
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-roboto",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "LoopWeave - Stock Trading Metrics",
@@ -14,23 +34,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Roboto:wght@300;400;500&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Asimovian&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      className={`${inter.variable} ${montserrat.variable} ${roboto.variable}`}
+    >
       <body>
         <StyledComponentsRegistry>
           <ThemeProvider>{children}</ThemeProvider>

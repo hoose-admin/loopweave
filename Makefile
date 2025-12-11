@@ -2,7 +2,9 @@
 .PHONY: dev-frontend dev-api dev-analytics dev-all
 .PHONY: setup-frontend setup-api setup-analytics setup-scripts setup-all
 .PHONY: clean-frontend clean-api clean-analytics clean-scripts clean-all
-.PHONY: stop seed-stock deploy-api deploy-analytics deploy-frontend setup-bigquery setup-scheduler
+.PHONY: stop seed-stock
+.PHONY: terraform-load-env terraform-init terraform-plan terraform-apply terraform-destroy terraform-output
+.PHONY: build-push-api build-push-analytics build-push-frontend build-push-all
 
 # Colors for output
 BLUE := \033[0;34m
@@ -131,24 +133,74 @@ seed-stock: setup-scripts ## Seed BigQuery with historical stock data (usage: ma
 	@echo "$(BLUE)Seeding BigQuery with historical data for $(SYMBOL)...$(NC)"
 	cd scripts && uv run seed-stock-data.py $(SYMBOL)
 
-# Deployment targets (load .env automatically via Makefile)
-deploy-api: ## Deploy API service to Cloud Run
-	@echo "$(BLUE)Deploying API service...$(NC)"
-	./scripts/deploy-api.sh
+# Terraform targets
+tf-load-env: ## Generate terraform.tfvars from .env file
+	@echo "$(BLUE)Loading environment variables from .env...$(NC)"
+	./terraform/load-env.sh
 
-deploy-analytics: ## Deploy Analytics service to Cloud Run
-	@echo "$(BLUE)Deploying Analytics service...$(NC)"
-	./scripts/deploy-analytics.sh
+tf-init: terraform-load-env ## Initialize Terraform
+	@echo "$(BLUE)Initializing Terraform...$(NC)"
+	cd terraform && terraform init
 
-deploy-frontend: ## Deploy Frontend to Cloud Run
-	@echo "$(BLUE)Deploying Frontend...$(NC)"
-	./scripts/deploy-frontend.sh
+tf-plan: terraform-init ## Plan Terraform changes
+	@echo "$(BLUE)Planning Terraform changes...$(NC)"
+	cd terraform && terraform plan
 
-setup-bigquery: ## Setup BigQuery dataset and tables
-	@echo "$(BLUE)Setting up BigQuery...$(NC)"
-	./scripts/setup-bigquery.sh
+tf-apply: terraform-init ## Apply Terraform changes (use AUTO_APPROVE=true to skip confirmation)
+	@echo "$(BLUE)Applying Terraform changes...$(NC)"
+	cd terraform && terraform apply -auto-approve
 
-setup-scheduler: ## Setup Cloud Scheduler jobs
-	@echo "$(BLUE)Setting up Cloud Scheduler...$(NC)"
-	./scripts/setup-scheduler.sh
+
+tf-destroy: terraform-init ## Destroy Terraform infrastructure
+	@echo "$(YELLOW)Destroying Terraform infrastructure...$(NC)"
+	cd terraform && terraform destroy
+
+tf-output: terraform-init ## Show Terraform outputs
+	@echo "$(BLUE)Terraform outputs:$(NC)"
+	cd terraform && terraform output
+
+# Docker build and push targets (for use after Terraform creates infrastructure)
+build-push-api: ## Build and push API Docker image
+	@echo "$(BLUE)Building and pushing API image...$(NC)"
+	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
+		echo "$(YELLOW)GCP_PROJECT_ID not set, trying gcloud config...$(NC)"; \
+		GCP_PROJECT_ID=$$(gcloud config get-value project 2>/dev/null); \
+	fi; \
+	if [ -z "$$GCP_PROJECT_ID" ]; then \
+		echo "$(YELLOW)Error: GCP_PROJECT_ID not set$(NC)"; \
+		exit 1; \
+	fi; \
+	REGION=$${GCP_REGION:-us-central1}; \
+	IMAGE="$$REGION-docker.pkg.dev/$$GCP_PROJECT_ID/loopweave/loopweave-api:latest"; \
+	cd backend/api && docker build -t $$IMAGE . && docker push $$IMAGE
+
+build-push-analytics: ## Build and push Analytics Docker image
+	@echo "$(BLUE)Building and pushing Analytics image...$(NC)"
+	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
+		echo "$(YELLOW)GCP_PROJECT_ID not set, trying gcloud config...$(NC)"; \
+		GCP_PROJECT_ID=$$(gcloud config get-value project 2>/dev/null); \
+	fi; \
+	if [ -z "$$GCP_PROJECT_ID" ]; then \
+		echo "$(YELLOW)Error: GCP_PROJECT_ID not set$(NC)"; \
+		exit 1; \
+	fi; \
+	REGION=$${GCP_REGION:-us-central1}; \
+	IMAGE="$$REGION-docker.pkg.dev/$$GCP_PROJECT_ID/loopweave/loopweave-analytics:latest"; \
+	cd backend/analytics && docker build -t $$IMAGE . && docker push $$IMAGE
+
+build-push-frontend: ## Build and push Frontend Docker image
+	@echo "$(BLUE)Building and pushing Frontend image...$(NC)"
+	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
+		echo "$(YELLOW)GCP_PROJECT_ID not set, trying gcloud config...$(NC)"; \
+		GCP_PROJECT_ID=$$(gcloud config get-value project 2>/dev/null); \
+	fi; \
+	if [ -z "$$GCP_PROJECT_ID" ]; then \
+		echo "$(YELLOW)Error: GCP_PROJECT_ID not set$(NC)"; \
+		exit 1; \
+	fi; \
+	REGION=$${GCP_REGION:-us-central1}; \
+	IMAGE="$$REGION-docker.pkg.dev/$$GCP_PROJECT_ID/loopweave/loopweave-frontend:latest"; \
+	cd frontend && docker build -t $$IMAGE . && docker push $$IMAGE
+
+build-push-all: build-push-api build-push-analytics build-push-frontend ## Build and push all Docker images
 

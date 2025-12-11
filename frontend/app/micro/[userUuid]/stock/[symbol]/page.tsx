@@ -149,7 +149,7 @@ export default function StockDetailPage() {
       return { data: [], layout: {} };
     }
 
-    const dates = timeseries.map((d) => d.timestamp);
+    const dates = timeseries.map((d) => d.date);
     const prices = timeseries.map((d) => d.close);
     const rsi = timeseries.map((d) => d.rsi || 0);
     const volume = timeseries.map((d) => d.volume);

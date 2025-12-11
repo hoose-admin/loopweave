@@ -217,13 +217,13 @@ This cloud run instance is used for longer running jobs. It it called once every
 #### /sync
 
     - Pull the data from the previous 24 hours from the following finance api: (https://site.financialmodelingprep.com/developer/docs)
-    - I want to start with 20 companies to sync their data to bigquery. I want to use 30 minute intervals, for the data going back 5 years.
+    - I want to start with 20 companies to sync their data to bigquery. I want to use daily (EOD) intervals, for the data going back 5 years.
       - I need you to propose a solution on how to most efficiently query data from FMP api to get all of the stocks.
 
 #### /ta-metrics
 
     - Query the BigQuery data which will include the stock proces, and calculate all the major metrics and insert them into new columns in the bigquery table (EMa, SMA, MACD, etc)
-    - Calculate the patterns like (Three Black Crows, Doji Star, Engulfing Pattern, Inverted Hammer). Do this using the 30 minute stock data. Place the start time, end time, stock ID, pattern type into the "ta" bigquery table.
+    - Calculate the patterns like (Three Black Crows, Doji Star, Engulfing Pattern, Inverted Hammer). Do this using the daily stock data. Place the start time, end time, stock ID, pattern type into the "ta" bigquery table.
     - use the following python library to calculate the metrics and the patterns https://www.pandas-ta.dev/
 
 ## Cloud Scheduler
@@ -244,7 +244,7 @@ where all the financial data is stored. It contains three tables: timeseries, st
 timeseries data with all the open, close, all the other metrics from the API (Stock Batch Quote API)
 
       - Is this most appropriate? https://financialmodelingprep.com/stable/batch-quote?symbols=AAPL&apikey=
-      - Is this most appropriate for this application? https://financialmodelingprep.com/stable/historical-chart/30min?symbol=AAPL&apikey=
+      - Is this most appropriate for this application? https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=AAPL&apikey=
 
       - This will be updated by the cron job to contain all the PANDAS-TA metrics like EMA, SMA, etc
 

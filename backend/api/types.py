@@ -16,13 +16,22 @@ class Stock(BaseModel):
     logo: Optional[str] = None
 
 class TimeSeriesData(BaseModel):
-    stock_symbol: str
-    timestamp: str
+    symbol: str
+    date: str
+    # FMP API fields from historical-price-eod/full endpoint (daily EOD data)
     open: float
     high: float
     low: float
     close: float
     volume: float
+    unadjusted_close: Optional[float] = None
+    unadjusted_volume: Optional[float] = None
+    change: Optional[float] = None
+    change_percent: Optional[float] = None
+    vwap: Optional[float] = None
+    label: Optional[str] = None
+    change_over_time: Optional[float] = None
+    # Technical analysis metrics (calculated fields)
     ema_12: Optional[float] = None
     ema_26: Optional[float] = None
     sma_50: Optional[float] = None

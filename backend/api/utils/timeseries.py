@@ -12,19 +12,18 @@ def get_timeseries(
     
     query = """
     SELECT 
-        stock_symbol,
-        timestamp,
+        symbol,
+        date,
         open,
         high,
         low,
         close,
         volume,
-        ema_12,
-        ema_26,
+        change,
+        change_percent,
+        vwap,
         sma_50,
         sma_200,
-        macd,
-        macd_signal,
         macd_histogram,
         rsi
     FROM `{project}.{dataset}.timeseries`
@@ -36,16 +35,16 @@ def get_timeseries(
     
     conditions = []
     if symbol:
-        conditions.append(f"stock_symbol = '{symbol.upper()}'")
+        conditions.append(f"symbol = '{symbol.upper()}'")
     if start_date:
-        conditions.append(f"timestamp >= '{start_date}'")
+        conditions.append(f"date >= '{start_date}'")
     if end_date:
-        conditions.append(f"timestamp <= '{end_date}'")
+        conditions.append(f"date <= '{end_date}'")
     
     if conditions:
         query += " AND " + " AND ".join(conditions)
     
-    query += " ORDER BY timestamp DESC LIMIT 1000"
+    query += " ORDER BY date DESC LIMIT 1000"
     
     results = bq_client.query(query)
     return results

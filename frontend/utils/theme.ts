@@ -8,9 +8,9 @@ export const theme = {
     secondary: '#ff7878',
   },
   fonts: {
-    logo: '"Asimovian", sans-serif',
-    body: '"Poiret One", sans-serif',
-    detail: '"Roboto", sans-serif',
+    logo: 'var(--font-montserrat), sans-serif',
+    body: 'var(--font-inter), sans-serif',
+    detail: 'var(--font-roboto), sans-serif',
   },
 } as const;
 

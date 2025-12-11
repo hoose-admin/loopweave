@@ -2,13 +2,13 @@
 name = "loopweave-analytics"
 version = "0.1.0"
 description = "LoopWeave Analytics Service"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.104.1",
     "uvicorn[standard]==0.24.0",
     "google-cloud-bigquery==3.13.0",
-    "pandas==2.1.3",
-    "pandas-ta==0.3.14b0",
+    "pandas>=2.3.2",
+    "pandas-ta",
     "httpx==0.25.2",
     "python-dotenv==1.0.0",
     "pydantic==2.5.0",

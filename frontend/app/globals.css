@@ -10,7 +10,7 @@ body {
   overflow-x: hidden;
   background-color: #FFF;
   color: #333;
-  font-family: 'Poiret One', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 a {
