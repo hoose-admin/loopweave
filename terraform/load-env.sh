@@ -46,6 +46,9 @@ firebase_messaging_sender_id = "${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:-}"
 firebase_app_id             = "${NEXT_PUBLIC_FIREBASE_APP_ID:-}"
 
 stripe_publishable_key = "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
+
+# Cloud SQL
+cloudsql_password = "${CLOUDSQL_PASSWORD:-}"
 EOF
 
 echo "Generated terraform.tfvars from .env file"

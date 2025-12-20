@@ -1,7 +1,8 @@
 // Stock and pattern data types
 export interface Stock {
   symbol: string;
-  company_name: string;
+  name: string;
+  exchange?: string;
   sector?: string;
   industry?: string;
   market_cap?: number;

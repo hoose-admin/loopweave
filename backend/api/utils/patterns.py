@@ -1,6 +1,19 @@
 from typing import Optional, List
 from .bigquery import get_bigquery_client
-from ..types import Pattern
+import importlib.util
+import sys
+from pathlib import Path
+
+# Import types from parent directory
+types_path = Path(__file__).parent.parent / "types.py"
+spec = importlib.util.spec_from_file_location("api_types", types_path)
+if "api_types" not in sys.modules:
+    api_types = importlib.util.module_from_spec(spec)
+    sys.modules["api_types"] = api_types
+    spec.loader.exec_module(api_types)
+else:
+    api_types = sys.modules["api_types"]
+Pattern = api_types.Pattern
 
 def get_patterns(
     pattern_type: str,

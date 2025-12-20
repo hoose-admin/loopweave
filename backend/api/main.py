@@ -2,11 +2,23 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 import os
+import importlib.util
+from pathlib import Path
 
-from .types import Stock, TimeSeriesData, Pattern
-from .utils.timeseries import get_timeseries
-from .utils.stocks import get_all_stocks, get_stock_by_symbol
-from .utils.patterns import get_patterns
+# Import local types.py (avoiding conflict with built-in types module)
+# Load it as a module so utils can import it
+import sys
+types_path = Path(__file__).parent / "types.py"
+spec = importlib.util.spec_from_file_location("api_types", types_path)
+api_types = importlib.util.module_from_spec(spec)
+sys.modules["api_types"] = api_types
+spec.loader.exec_module(api_types)
+Stock = api_types.Stock
+TimeSeriesData = api_types.TimeSeriesData
+Pattern = api_types.Pattern
+from utils.timeseries import get_timeseries
+from utils.stocks import get_all_stocks, get_stock_by_symbol
+from utils.patterns import get_patterns
 
 app = FastAPI(title="LoopWeave API")
 

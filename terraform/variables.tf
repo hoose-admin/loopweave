@@ -76,6 +76,75 @@ variable "firebase_app_id" {
   default     = ""
 }
 
+# Cloud SQL Variables
+variable "cloudsql_instance_name" {
+  description = "Cloud SQL instance name"
+  type        = string
+  default     = "loopweave-db"
+}
+
+variable "cloudsql_database_name" {
+  description = "Cloud SQL database name"
+  type        = string
+  default     = "loopweave"
+}
+
+variable "cloudsql_region" {
+  description = "Cloud SQL region (defaults to region variable)"
+  type        = string
+  default     = null
+}
+
+variable "cloudsql_tier" {
+  description = "Cloud SQL machine tier"
+  type        = string
+  default     = "db-g1-small"
+}
+
+variable "cloudsql_disk_size_gb" {
+  description = "Cloud SQL disk size in GB"
+  type        = number
+  default     = 10
+}
+
+variable "cloudsql_disk_type" {
+  description = "Cloud SQL disk type (PD_HDD or PD_SSD)"
+  type        = string
+  default     = "PD_HDD"
+}
+
+variable "cloudsql_backup_enabled" {
+  description = "Enable Cloud SQL backups"
+  type        = bool
+  default     = true
+}
+
+variable "cloudsql_backup_retention_days" {
+  description = "Cloud SQL backup retention days"
+  type        = number
+  default     = 7
+}
+
+variable "cloudsql_deletion_protection" {
+  description = "Enable deletion protection for Cloud SQL instance"
+  type        = bool
+  default     = false
+}
+
+variable "cloudsql_user" {
+  description = "Cloud SQL application user name"
+  type        = string
+  default     = "loopweave_app"
+  sensitive   = false
+}
+
+variable "cloudsql_password" {
+  description = "Cloud SQL application user password (store in tfvars, not in git)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "stripe_publishable_key" {
   description = "Stripe Publishable Key"
   type        = string

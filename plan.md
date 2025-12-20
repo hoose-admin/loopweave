@@ -11,10 +11,79 @@ Papers and existing data:
 - profitability of TA: evidence from the piercing line and dark cloud cover patterns in forex
 
 Samurai trading academy results (samuraitradingacademy.com)
-Best patterns: - head and shoulders - bullish and bearish rectangle - triple top and bottom - double top and bottom - ascending and descending channel - descending and descending triangles
--bull and bear flag
 
-- cup and handle?
+## Simple Currently implemented strategies:
+
+### 20SMA Trendlines
+
+### Golden/Death Cross
+
+- Identify the following signals.
+- identify the next significant turning point statistically.
+  - Show the turning point and stats on the downside (trade loss) and the upside (trade win). show a boxplot for each.
+  - Is concavity over a certain timeframe (5 days, 10 days, 20 days?) of the chart the best way to do this? Better way to identify turning points?
+- Give a boxplot to show the trade exit on winning side
+- Give a boxplot to show the
+- Identify the stop loss if the trade goes the other way
+- Deteremine the
+- Create a time based analysis (5, 10, 20, 40, 80, 160, 320, 640 days) after the target metric was identified. determine the turning point statistically based on this to maximize the trade outcome.
+
+Buy Signal (Golden Cross):
+
+- Core Logic: ema_20 crosses above sma_50 (or 50 crosses 200).
+- Required Schema Fields: ema_20, sma_50, sma_200
+
+Sell/Exit Signal (Death Cross):
+
+- Core logic: ema_20 crosses below sma_50.
+- Required Schema: ema_20, sma_50, sma_200
+
+### Momentum Reversal: RSI Overbought/Oversold
+
+Statistical Analysis Test how often the price is higher 5, 10, or 20 days after an RSI signal compared to the overall average price change.
+
+Buy Signal: rsi falls below 30 (oversold) and then crosses back above 30.
+
+- rsi, close
+  Sell Signal: rsi rises above 70 (overbought) and then crosses back below 70.
+- rsi, close
+
+### Bollinger bands
+
+This strategy uses the Bollinger Bands (which are based on the standard deviation, capturing 95% of price movement) to identify periods of low volatility that often precede large price moves (breakouts). Statistical Analysis Test if breakouts that occur after a squeeze lead to a statistically significant higher return than breakouts that happen during high volatility.
+
+- Contraction Signal: The distance between bb_upper and bb_lower is at its minimum over the last X days (the "Bollinger Band Squeeze").
+
+  - bb_upper, bb_lower
+
+- Breakout Signal: Following a squeeze, the close price breaks above bb_upper (Bullish Breakout).
+  - close, bb_upper, bb_lower
+
+### Confirmation: MACD Crossovers
+
+MACD is primarily a momentum indicator, but its signals are often used to confirm the directional shift identified by the moving average crossovers or RSI signals. Statistical Analysis Test the false signal rate of a simple MA crossover strategy (e.g., 50/200 MA) without the MACD filter, versus the false signal rate with the MACD filter. The filter should decrease the false signals.
+
+Strategy Component Core Logic Required Schema Fields
+Bullish Confirmation: macd_histogram crosses above the zero line.
+
+- macd_histogram
+  Bearish Confirmation: macd_histogram crosses below the zero line.
+- macd_histogram
+
+### Average True Range (ATR) to identify periods of extreme calm.
+
+The statistical edge comes from the market's tendency for low volatility to be followed by high volatility (volatility clustering).
+
+## Best patterns: ---- IMPLEMENT LATER -----
+
+- head and shoulders
+- bullish and bearish rectangle
+- triple top and bottom
+- double top and bottom
+- ascending and descending channel
+- descending and descending triangles
+- bull and bear flag
+  // Dont use for now: - cup and handle?
 
 Worst: - bullish and bearish pennant
 

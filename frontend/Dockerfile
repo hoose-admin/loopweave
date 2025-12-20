@@ -18,6 +18,9 @@ COPY . .
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Ensure public directory exists (create if it doesn't)
+RUN mkdir -p ./public
+
 # Build the application
 RUN yarn build
 
@@ -32,9 +35,10 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+# Copy public directory (will be empty if no files, which is fine)
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 

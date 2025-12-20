@@ -45,7 +45,8 @@ All tables from plan.md are now included in the setup script. Here's the verific
 **BigQuery Schema:**
 
 - symbol:STRING:REQUIRED
-- company_name:STRING:REQUIRED
+- name:STRING:REQUIRED
+- exchange:STRING
 - sector:STRING
 - industry:STRING
 - market_cap:FLOAT

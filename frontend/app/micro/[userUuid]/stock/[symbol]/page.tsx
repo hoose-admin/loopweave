@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import styled from 'styled-components';
-import { AccountCircle } from '@mui/icons-material';
-import PlotlyChart from '@/components/PlotlyChart';
-import { Stock, TimeSeriesData } from '@/types';
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import styled from "styled-components";
+import { AccountCircle } from "@mui/icons-material";
+import PlotlyChart from "@/components/PlotlyChart";
+import { Stock, TimeSeriesData } from "@/types";
 
 const Container = styled.div`
   min-height: 100vh;
@@ -133,7 +133,7 @@ export default function StockDetailPage() {
         setStock(stockData);
         setTimeseries(timeseriesData.timeseries || []);
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
@@ -158,31 +158,31 @@ export default function StockDetailPage() {
       {
         x: dates,
         y: prices,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Price',
-        line: { color: '#64a7fa', width: 2 },
-        xaxis: 'x',
-        yaxis: 'y',
+        type: "scatter",
+        mode: "lines",
+        name: "Price",
+        line: { color: "#64a7fa", width: 2 },
+        xaxis: "x",
+        yaxis: "y",
       },
       {
         x: dates,
         y: rsi,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'RSI',
-        line: { color: '#ff7878', width: 2 },
-        xaxis: 'x2',
-        yaxis: 'y2',
+        type: "scatter",
+        mode: "lines",
+        name: "RSI",
+        line: { color: "#ff7878", width: 2 },
+        xaxis: "x2",
+        yaxis: "y2",
       },
       {
         x: dates,
         y: volume,
-        type: 'bar',
-        name: 'Volume',
-        marker: { color: '#AAA' },
-        xaxis: 'x3',
-        yaxis: 'y3',
+        type: "bar",
+        name: "Volume",
+        marker: { color: "#AAA" },
+        xaxis: "x3",
+        yaxis: "y3",
       },
     ];
 
@@ -191,16 +191,16 @@ export default function StockDetailPage() {
       grid: {
         rows: 3,
         columns: 1,
-        pattern: 'independent',
+        pattern: "independent",
       },
-      xaxis: { domain: [0, 1], anchor: 'y' },
-      yaxis: { domain: [0.67, 1], title: 'Price' },
-      xaxis2: { domain: [0, 1], anchor: 'y2' },
-      yaxis2: { domain: [0.34, 0.66], title: 'RSI' },
-      xaxis3: { domain: [0, 1], anchor: 'y3' },
-      yaxis3: { domain: [0, 0.33], title: 'Volume' },
-      paper_bgcolor: 'transparent',
-      plot_bgcolor: 'transparent',
+      xaxis: { domain: [0, 1], anchor: "y" },
+      yaxis: { domain: [0.67, 1], title: "Price" },
+      xaxis2: { domain: [0, 1], anchor: "y2" },
+      yaxis2: { domain: [0.34, 0.66], title: "RSI" },
+      xaxis3: { domain: [0, 1], anchor: "y3" },
+      yaxis3: { domain: [0, 0.33], title: "Volume" },
+      paper_bgcolor: "transparent",
+      plot_bgcolor: "transparent",
       showlegend: true,
     };
 
@@ -230,13 +230,15 @@ export default function StockDetailPage() {
       <Header>
         <Logo href="/">loopweave</Logo>
         <Link href="/account">
-          <AccountCircle style={{ color: '#333', fontSize: '2rem', cursor: 'pointer' }} />
+          <AccountCircle
+            style={{ color: "#333", fontSize: "2rem", cursor: "pointer" }}
+          />
         </Link>
       </Header>
       <Main>
         <StockHeader>
           <StockSymbol>{stock.symbol}</StockSymbol>
-          <CompanyName>{stock.company_name}</CompanyName>
+          <CompanyName>{stock.name}</CompanyName>
         </StockHeader>
 
         <ChartSection>
@@ -252,38 +254,37 @@ export default function StockDetailPage() {
             <FundamentalValue>
               {stock.market_cap
                 ? `$${(stock.market_cap / 1e9).toFixed(2)}B`
-                : 'N/A'}
+                : "N/A"}
             </FundamentalValue>
           </FundamentalCard>
           <FundamentalCard>
             <FundamentalLabel>PE Ratio</FundamentalLabel>
-            <FundamentalValue>{stock.pe_ratio?.toFixed(2) || 'N/A'}</FundamentalValue>
+            <FundamentalValue>
+              {stock.pe_ratio?.toFixed(2) || "N/A"}
+            </FundamentalValue>
           </FundamentalCard>
           <FundamentalCard>
             <FundamentalLabel>Forward PE</FundamentalLabel>
             <FundamentalValue>
-              {stock.forward_pe?.toFixed(2) || 'N/A'}
+              {stock.forward_pe?.toFixed(2) || "N/A"}
             </FundamentalValue>
           </FundamentalCard>
           <FundamentalCard>
             <FundamentalLabel>EBITDA</FundamentalLabel>
             <FundamentalValue>
-              {stock.ebitda
-                ? `$${(stock.ebitda / 1e9).toFixed(2)}B`
-                : 'N/A'}
+              {stock.ebitda ? `$${(stock.ebitda / 1e9).toFixed(2)}B` : "N/A"}
             </FundamentalValue>
           </FundamentalCard>
           <FundamentalCard>
             <FundamentalLabel>Sector</FundamentalLabel>
-            <FundamentalValue>{stock.sector || 'N/A'}</FundamentalValue>
+            <FundamentalValue>{stock.sector || "N/A"}</FundamentalValue>
           </FundamentalCard>
           <FundamentalCard>
             <FundamentalLabel>Industry</FundamentalLabel>
-            <FundamentalValue>{stock.industry || 'N/A'}</FundamentalValue>
+            <FundamentalValue>{stock.industry || "N/A"}</FundamentalValue>
           </FundamentalCard>
         </FundamentalsGrid>
       </Main>
     </Container>
   );
 }
-

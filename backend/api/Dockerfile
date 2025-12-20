@@ -21,9 +21,10 @@ RUN uv pip install --system --no-cache \
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8000
+# Expose port (Cloud Run uses PORT env var, default to 8080)
+EXPOSE 8080
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application (PORT env var is set by Cloud Run)
+# Use sh to read PORT with fallback to 8080
+CMD sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"
 

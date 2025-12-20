@@ -1,6 +1,19 @@
 from typing import List, Optional
 from .bigquery import get_bigquery_client
-from ..types import Stock
+import importlib.util
+import sys
+from pathlib import Path
+
+# Import types from parent directory
+types_path = Path(__file__).parent.parent / "types.py"
+spec = importlib.util.spec_from_file_location("api_types", types_path)
+if "api_types" not in sys.modules:
+    api_types = importlib.util.module_from_spec(spec)
+    sys.modules["api_types"] = api_types
+    spec.loader.exec_module(api_types)
+else:
+    api_types = sys.modules["api_types"]
+Stock = api_types.Stock
 
 def get_all_stocks() -> List[Stock]:
     """Get all stocks from BigQuery"""
@@ -9,7 +22,8 @@ def get_all_stocks() -> List[Stock]:
     query = """
     SELECT 
         symbol,
-        company_name,
+        name,
+        exchange,
         sector,
         industry,
         market_cap,
@@ -20,7 +34,7 @@ def get_all_stocks() -> List[Stock]:
         website,
         logo
     FROM `{project}.{dataset}.stocks`
-    ORDER BY company_name
+    ORDER BY name
     """.format(
         project=bq_client.project_id,
         dataset=bq_client.dataset_id,
@@ -36,7 +50,8 @@ def get_stock_by_symbol(symbol: str) -> Optional[Stock]:
     query = """
     SELECT 
         symbol,
-        company_name,
+        name,
+        exchange,
         sector,
         industry,
         market_cap,

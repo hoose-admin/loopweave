@@ -1,183 +1,283 @@
 import os
+from typing import Dict, Any, List
+
 import pandas as pd
 import pandas_ta as ta
-from google.cloud import bigquery
-from typing import Dict, Any, List
+
+from utils.chart_patterns import calculate_all_chart_patterns
+from utils.db import (
+    execute_query_dataframe,
+    update_timeseries_metrics,
+    execute_insert,
+)
 
 # List of stocks to process
 STOCKS = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "META",
-    "TSLA", "NVDA", "JPM", "V", "JNJ",
-    "WMT", "PG", "MA", "UNH", "HD",
-    "DIS", "BAC", "ADBE", "NFLX", "CRM"
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "META",
+    "TSLA",
+    "NVDA",
+    "JPM",
+    "V",
+    "JNJ",
+    "WMT",
+    "PG",
+    "MA",
+    "UNH",
+    "HD",
+    "DIS",
+    "BAC",
+    "ADBE",
+    "NFLX",
+    "CRM",
 ]
 
-def get_bigquery_client():
-    """Get BigQuery client"""
-    return bigquery.Client(project=os.getenv("GCP_PROJECT_ID"))
 
-def get_dataset_id():
-    """Get BigQuery dataset ID"""
-    return os.getenv("BIGQUERY_DATASET", "loopweave")
-
-def fetch_timeseries_data(symbol: str) -> pd.DataFrame:
-    """Fetch timeseries data from BigQuery"""
-    bq_client = get_bigquery_client()
-    dataset_id = get_dataset_id()
-    
-    query = f"""
+def _fetch_timeseries_from_table(symbol: str, table: str) -> pd.DataFrame:
+    """Fetch timeseries data from a given Cloud SQL table."""
+    query = """
     SELECT 
-        timestamp,
+        date,
         open,
         high,
         low,
         close,
-        volume
-    FROM `{os.getenv("GCP_PROJECT_ID")}.{dataset_id}.timeseries`
-    WHERE stock_symbol = '{symbol}'
-    ORDER BY timestamp ASC
-    """
+        volume,
+        sma_20,
+        sma_50,
+        sma_200,
+        ema_12,
+        ema_20,
+        ema_26,
+        macd_line,
+        macd_signal_line,
+        macd_histogram,
+        rsi,
+        atr,
+        bb_upper,
+        bb_lower
+    FROM {}
+    WHERE symbol = %s
+    ORDER BY date ASC
+    """.format(table)
     
-    query_job = bq_client.query(query)
-    df = query_job.to_dataframe()
+    df = execute_query_dataframe(query, (symbol,))
     
     if not df.empty:
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df.set_index('timestamp', inplace=True)
+        df["date"] = pd.to_datetime(df["date"])
+        df.set_index("date", inplace=True)
     
     return df
+
+
+def fetch_timeseries_data(symbol: str) -> pd.DataFrame:
+    """Fetch daily timeseries data from Cloud SQL."""
+    return _fetch_timeseries_from_table(symbol, "timeseries")
+
+
+def fetch_timeseries_data_4h(symbol: str) -> pd.DataFrame:
+    """Fetch 4‑hour timeseries data from Cloud SQL."""
+    return _fetch_timeseries_from_table(symbol, "timeseries_4h")
+
 
 def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate technical analysis metrics using pandas-ta"""
-    # EMA
-    df['ema_12'] = ta.ema(df['close'], length=12)
-    df['ema_26'] = ta.ema(df['close'], length=26)
+    """
+    Calculate technical analysis metrics using pandas-ta.
     
-    # SMA
-    df['sma_50'] = ta.sma(df['close'], length=50)
-    df['sma_200'] = ta.sma(df['close'], length=200)
+    Calculates all metrics needed for strategies and analysis:
+    - Simple Moving Averages (SMA): 20, 50, 200
+    - Exponential Moving Averages (EMA): 12, 20, 26
+    - MACD: line, signal, histogram
+    - RSI: 14-period
+    - ATR: Average True Range
+    - Bollinger Bands: upper, lower
+    """
+    if df.empty:
+        return df
+
+    # Simple Moving Averages
+    df["sma_20"] = ta.sma(df["close"], length=20)
+    df["sma_50"] = ta.sma(df["close"], length=50)
+    df["sma_200"] = ta.sma(df["close"], length=200)
     
-    # MACD
-    macd = ta.macd(df['close'])
+    # Exponential Moving Averages
+    df["ema_12"] = ta.ema(df["close"], length=12)
+    df["ema_20"] = ta.ema(df["close"], length=20)
+    df["ema_26"] = ta.ema(df["close"], length=26)
+    
+    # MACD (12, 26, 9)
+    macd = ta.macd(df["close"])
     if macd is not None and not macd.empty:
-        df['macd'] = macd['MACD_12_26_9']
-        df['macd_signal'] = macd['MACDs_12_26_9']
-        df['macd_histogram'] = macd['MACDh_12_26_9']
-    
-    # RSI
-    df['rsi'] = ta.rsi(df['close'], length=14)
+        df["macd_line"] = macd["MACD_12_26_9"]
+        df["macd_signal_line"] = macd["MACDs_12_26_9"]
+        df["macd_histogram"] = macd["MACDh_12_26_9"]
+    else:
+        df["macd_line"] = None
+        df["macd_signal_line"] = None
+        df["macd_histogram"] = None
+
+    # RSI (14-period)
+    df["rsi"] = ta.rsi(df["close"], length=14)
+
+    # ATR (Average True Range) - 14 period default
+    atr = ta.atr(df["high"], df["low"], df["close"], length=14)
+    if atr is not None and not atr.empty:
+        df["atr"] = atr
+    else:
+        df["atr"] = None
+
+    # Bollinger Bands (20 period, 2 std dev)
+    bb = ta.bbands(df["close"], length=20, std=2)
+    if bb is not None and not bb.empty:
+        df["bb_upper"] = bb["BBU_20_2.0"]
+        df["bb_lower"] = bb["BBL_20_2.0"]
+    else:
+        df["bb_upper"] = None
+        df["bb_lower"] = None
     
     return df
 
-def update_timeseries_metrics(symbol: str, df: pd.DataFrame):
-    """Update timeseries table with calculated metrics"""
-    bq_client = get_bigquery_client()
-    dataset_id = get_dataset_id()
+
+def _update_metrics_for_table(symbol: str, df: pd.DataFrame, table: str) -> None:
+    """
+    Update a timeseries table with all calculated metrics.
     
-    updates = []
-    
-    for idx, row in df.iterrows():
-        updates.append({
-            "stock_symbol": symbol,
-            "timestamp": idx.isoformat(),
-            "ema_12": float(row.get('ema_12', 0)) if pd.notna(row.get('ema_12')) else None,
-            "ema_26": float(row.get('ema_26', 0)) if pd.notna(row.get('ema_26')) else None,
-            "sma_50": float(row.get('sma_50', 0)) if pd.notna(row.get('sma_50')) else None,
-            "sma_200": float(row.get('sma_200', 0)) if pd.notna(row.get('sma_200')) else None,
-            "macd": float(row.get('macd', 0)) if pd.notna(row.get('macd')) else None,
-            "macd_signal": float(row.get('macd_signal', 0)) if pd.notna(row.get('macd_signal')) else None,
-            "macd_histogram": float(row.get('macd_histogram', 0)) if pd.notna(row.get('macd_histogram')) else None,
-            "rsi": float(row.get('rsi', 0)) if pd.notna(row.get('rsi')) else None,
-        })
-    
-    # Use MERGE or UPDATE query to update existing rows
-    # For now, we'll use a simplified approach with UPDATE statements
-    for update in updates[:100]:  # Limit batch size
-        query = f"""
-        UPDATE `{os.getenv("GCP_PROJECT_ID")}.{dataset_id}.timeseries`
-        SET 
-            ema_12 = {update['ema_12'] or 'NULL'},
-            ema_26 = {update['ema_26'] or 'NULL'},
-            sma_50 = {update['sma_50'] or 'NULL'},
-            sma_200 = {update['sma_200'] or 'NULL'},
-            macd = {update['macd'] or 'NULL'},
-            macd_signal = {update['macd_signal'] or 'NULL'},
-            macd_histogram = {update['macd_histogram'] or 'NULL'},
-            rsi = {update['rsi'] or 'NULL'}
-        WHERE stock_symbol = '{symbol}' AND timestamp = '{update['timestamp']}'
-        """
+    Persists all technical indicators to Cloud SQL using batch updates.
+    """
+    if df.empty:
+        return
+
+    def _to_float_or_none(val):
+        """Convert pandas value to float or None."""
+        if pd.isna(val):
+            return None
         try:
-            bq_client.query(query).result()
-        except Exception as e:
-            print(f"Error updating metrics: {str(e)}")
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+
+    # Prepare metrics for batch update
+    metrics_list = []
+    for idx, row in df.iterrows():
+        metric_row = {
+            "symbol": symbol,
+            "date": idx.to_pydatetime(),
+            "sma_20": _to_float_or_none(row.get("sma_20")),
+            "sma_50": _to_float_or_none(row.get("sma_50")),
+            "sma_200": _to_float_or_none(row.get("sma_200")),
+            "ema_12": _to_float_or_none(row.get("ema_12")),
+            "ema_20": _to_float_or_none(row.get("ema_20")),
+            "ema_26": _to_float_or_none(row.get("ema_26")),
+            "macd_line": _to_float_or_none(row.get("macd_line")),
+            "macd_signal_line": _to_float_or_none(row.get("macd_signal_line")),
+            "macd_histogram": _to_float_or_none(row.get("macd_histogram")),
+            "rsi": _to_float_or_none(row.get("rsi")),
+            "atr": _to_float_or_none(row.get("atr")),
+            "bb_upper": _to_float_or_none(row.get("bb_upper")),
+            "bb_lower": _to_float_or_none(row.get("bb_lower")),
+        }
+        metrics_list.append(metric_row)
+
+    try:
+        update_timeseries_metrics(symbol, table, metrics_list)
+    except Exception as e:
+        print(f"Error updating metrics for {symbol} in {table}: {str(e)}")
+
+
+def update_timeseries_metrics(symbol: str, df: pd.DataFrame) -> None:
+    """Update daily timeseries table with calculated metrics."""
+    _update_metrics_for_table(symbol, df, "timeseries")
+
+
+def update_timeseries_metrics_4h(symbol: str, df: pd.DataFrame) -> None:
+    """Update 4‑hour timeseries table with calculated metrics."""
+    _update_metrics_for_table(symbol, df, "timeseries_4h")
 
 def calculate_patterns(df: pd.DataFrame, symbol: str) -> List[Dict[str, Any]]:
-    """Calculate candlestick patterns using pandas-ta"""
+    """
+    Calculate chart patterns using scipy/numpy.
+    
+    Chart patterns are multi-candle patterns like head and shoulders, rectangles,
+    triangles, channels, flags, etc.
+    
+    Args:
+        df: DataFrame with OHLC data
+        symbol: Stock symbol
+    
+    Returns:
+        List of pattern dictionaries matching Cloud SQL schema
+    """
     patterns = []
     
-    if len(df) < 3:
+    if len(df) < 40:
         return patterns
     
-    # Calculate candlestick patterns
+    # Calculate chart patterns using scipy/numpy
     try:
-        # Bullish patterns
-        inverted_hammer = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="invertedhammer")
-        bullish_engulfing = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="engulfing")
-        morning_star = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="morningstar")
-        three_white_soldiers = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="3whitesoldiers")
+        # Calculate all chart patterns
+        df_with_chart_patterns = calculate_all_chart_patterns(df.copy())
         
-        # Bearish patterns
-        three_black_crows = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="3blackcrows")
-        bearish_engulfing = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="engulfing")
-        shooting_star = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="shootingstar")
-        evening_star = ta.cdl_pattern(df['open'], df['high'], df['low'], df['close'], name="eveningstar")
-        
-        # Process patterns and add to list
-        pattern_columns = {
-            'inverted_hammer': inverted_hammer,
-            'bullish_engulfing': bullish_engulfing,
-            'morning_star': morning_star,
-            'three_white_soldiers': three_white_soldiers,
-            'three_black_crows': three_black_crows,
-            'bearish_engulfing': bearish_engulfing,
-            'shooting_star': shooting_star,
-            'evening_star': evening_star,
+        # Chart pattern names and their lookback periods (for determining start_time)
+        chart_pattern_configs = {
+            'head_and_shoulders': {'lookback': 60},
+            'bullish_rectangle': {'lookback': 40},
+            'bearish_rectangle': {'lookback': 40},
+            'triple_top': {'lookback': 60},
+            'triple_bottom': {'lookback': 60},
+            'double_top': {'lookback': 50},
+            'double_bottom': {'lookback': 50},
+            'ascending_channel': {'lookback': 40},
+            'descending_channel': {'lookback': 40},
+            'ascending_triangle': {'lookback': 40},
+            'descending_triangle': {'lookback': 40},
+            'bull_flag': {'lookback': 30},
+            'bear_flag': {'lookback': 30},
         }
         
-        for pattern_name, pattern_series in pattern_columns.items():
-            if pattern_series is not None and not pattern_series.empty:
-                # Find where pattern occurs (non-zero values)
-                pattern_occurrences = df[pattern_series != 0]
+        # Process each chart pattern
+        for pattern_name, config in chart_pattern_configs.items():
+            detected_col = f'{pattern_name}_detected'
+            if detected_col not in df_with_chart_patterns.columns:
+                continue
+            
+            # Find where pattern is detected (value = 1)
+            pattern_occurrences = df_with_chart_patterns[df_with_chart_patterns[detected_col] == 1]
+            
+            for idx, row in pattern_occurrences.iterrows():
+                # Chart patterns span multiple candles, so start_time is earlier than end_time
+                lookback = config['lookback']
+                pattern_end_idx = df_with_chart_patterns.index.get_loc(idx)
+                pattern_start_idx = max(0, pattern_end_idx - lookback)
+                pattern_start_time = df_with_chart_patterns.index[pattern_start_idx]
                 
-                for idx, row in pattern_occurrences.iterrows():
-                    patterns.append({
-                        "pattern_id": f"{symbol}_{pattern_name}_{idx.isoformat()}",
-                        "stock_symbol": symbol,
-                        "pattern_type": pattern_name,
-                        "start_time": idx.isoformat(),
-                        "end_time": idx.isoformat(),
-                        "confidence": 1.0,  # Can be calculated based on pattern strength
-                    })
+                patterns.append({
+                    "pattern_id": f"{symbol}_{pattern_name}_{idx.isoformat()}",
+                    "stock_symbol": symbol,
+                    "pattern_type": pattern_name,
+                    "start_time": pattern_start_time.isoformat(),
+                    "end_time": idx.isoformat(),
+                    "confidence": 1.0,  # Can be calculated based on pattern strength
+                })
     except Exception as e:
-        print(f"Error calculating patterns for {symbol}: {str(e)}")
+        print(f"Error calculating chart patterns for {symbol}: {str(e)}")
     
     return patterns
 
+
 def insert_patterns(patterns: List[Dict[str, Any]]):
-    """Insert patterns into BigQuery patterns table"""
+    """Insert patterns into Cloud SQL patterns table."""
     if not patterns:
         return
     
-    bq_client = get_bigquery_client()
-    dataset_id = get_dataset_id()
-    table_ref = bq_client.dataset(dataset_id).table("patterns")
-    
-    errors = bq_client.insert_rows_json(table_ref, patterns)
-    if errors:
-        raise Exception(f"Error inserting patterns: {errors}")
+    # Use ON CONFLICT to avoid duplicates
+    on_conflict = "ON CONFLICT (pattern_id) DO NOTHING"
+    execute_insert("patterns", patterns, on_conflict=on_conflict)
 
 async def calculate_all_metrics() -> Dict[str, Any]:
-    """Calculate TA metrics and patterns for all stocks"""
+    """Calculate TA metrics and patterns for all stocks (daily timeframe)."""
     stocks_processed = 0
     patterns_found = 0
     
@@ -212,4 +312,28 @@ async def calculate_all_metrics() -> Dict[str, Any]:
         "stocks_processed": stocks_processed,
         "patterns_found": patterns_found,
     }
+
+
+async def calculate_all_metrics_4h() -> Dict[str, Any]:
+    """
+    Calculate TA metrics for all stocks on 4‑hour timeframe.
+
+    This updates the `timeseries_4h` table but does not calculate/store patterns.
+    """
+    stocks_processed = 0
+
+    for symbol in STOCKS:
+        try:
+            df = fetch_timeseries_data_4h(symbol)
+            if df.empty:
+                continue
+
+            df_with_metrics = calculate_metrics(df)
+            update_timeseries_metrics_4h(symbol, df_with_metrics)
+            stocks_processed += 1
+        except Exception as e:
+            print(f"Error processing 4h metrics for {symbol}: {str(e)}")
+            continue
+
+    return {"stocks_processed": stocks_processed}
 
