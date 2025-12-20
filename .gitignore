@@ -57,3 +57,5 @@ terraform/.terraform.lock.hcl
 terraform/*.tfvars
 !terraform/*.tfvars.example
 
+seed/seedTimeseries/historical_timeseries_daily/*
+
