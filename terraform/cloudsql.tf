@@ -46,9 +46,11 @@ resource "google_sql_database_instance" "loopweave_db" {
       transaction_log_retention_days = var.cloudsql_backup_retention_days
     }
 
-    # No public IP needed - using Cloud SQL Proxy via Unix socket
+    # Enable private IP for Cloud SQL Proxy via Unix socket
+    # Public IP may also be enabled for direct access if needed
     ip_configuration {
-      ipv4_enabled = false
+      ipv4_enabled    = true  # Allow public IP (can be restricted via authorized networks)
+      private_network = null  # Private IP via VPC connector if needed later
     }
 
     database_flags {
