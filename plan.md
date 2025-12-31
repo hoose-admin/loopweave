@@ -12,9 +12,13 @@ Papers and existing data:
 
 Samurai trading academy results (samuraitradingacademy.com)
 
+## Dividend Adjusted close or 
+https://financialmodelingprep.com/stable/historical-price-eod/dividend-adjusted?symbol=AAPL 
+
 ## Simple Currently implemented strategies:
 
 ### 20SMA Trendlines
+price should bounce off the 20sma line. Price above line should treat 20sma as support, price below line should treat 20sma as resistance. calculation should only be done once trend is confirmed. Must do logic to confirm trend. 
 
 ### Golden/Death Cross
 
@@ -43,9 +47,9 @@ Sell/Exit Signal (Death Cross):
 Statistical Analysis Test how often the price is higher 5, 10, or 20 days after an RSI signal compared to the overall average price change.
 
 Buy Signal: rsi falls below 30 (oversold) and then crosses back above 30.
-
 - rsi, close
-  Sell Signal: rsi rises above 70 (overbought) and then crosses back below 70.
+
+Sell Signal: rsi rises above 70 (overbought) and then crosses back below 70.
 - rsi, close
 
 ### Bollinger bands

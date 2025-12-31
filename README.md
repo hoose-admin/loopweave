@@ -1,3 +1,8 @@
+Pro Tip for "Querying by Symbol"
+Regardless of the engine you choose, you should use Table Partitioning and Clustering (Indexes) to keep your queries fast as the database grows:
+1 Partition by Date: Divide your table into monthly or yearly chunks.
+2 Index by Symbol: Create a B-Tree index (or a Composite Index on symbol + date). This ensures that when you query WHERE symbol = 'AAPL', the database skips millions of irrelevant rows and goes straight to the Apple data.
+
 # LoopWeave
 
 A minimalist stock trading metrics visualization platform.
